@@ -1,7 +1,7 @@
 /*
-    PotPlayer 实时字幕翻译插件 - DeepSeek V4 API
+    PotPlayer 实时字幕翻译插件 - DeepSeek API
     支持简体中文 (CP936) / 繁体中文 (CP950) / 韩文 (CP949) / 英文 (CP0)
-    API 端点: https://api.deepseek.com/v1/chat/completions (OpenAI 兼容格式)
+    API 端点: https://api.deepseek.com/chat/completions (OpenAI 兼容格式)
     简化版: 直接使用最近30条字幕作为上下文（无 token 估算）
 */
 
@@ -15,7 +15,7 @@ string GetVersion() {
 }
 
 string GetDesc() {
-    return "{$CP949=DeepSeek V4를 사용한 실시간 자막 번역$}{$CP950=使用 DeepSeek V4 的實時字幕翻譯$}{$CP936=使用 DeepSeek V4 的实时字幕翻译$}{$CP0=Real-time subtitle translation using DeepSeek V4$}";
+    return "{$CP949=DeepSeek V4를 사용한 실시간 자막 번역$}{$CP950=使用 DeepSeek V4 的實時字幕翻譯$}{$CP936=使用 DeepSeek V4 的实时字幕翻译$}{$CP0=Real-time subtitle translation using DeepSeek V4 API$}";
 }
 
 string GetLoginTitle() {
@@ -23,7 +23,7 @@ string GetLoginTitle() {
 }
 
 string GetLoginDesc() {
-    return "{$CP949=모델 이름과 API 주소, 그리고 API 키를 입력하십시오 (예: deepseek-v4-flash|https://api.deepseek.com/v1).$}{$CP950=請輸入模型名稱與 API 地址，以及 API 金鑰（例如 deepseek-v4-flash|https://api.deepseek.com/v1）。$}{$CP936=请输入模型名称和 API 地址，以及 API 密钥（例如: deepseek-v4-flash|https://api.deepseek.com/v1）。$}{$CP0=Please enter the model name + Base URL and provide the API Key (e.g., deepseek-v4-flash|https://api.deepseek.com/v1).$}";
+    return "{$CP949=모델 이름과 API 주소, 그리고 API 키를 입력하십시오 (예: deepseek-v4-flash|https://api.deepseek.com).$}{$CP950=請輸入模型名稱與 API 地址，以及 API 金鑰（例如 deepseek-v4-flash|https://api.deepseek.com）。$}{$CP936=请输入模型名称和 API 地址，以及 API 密钥（例如: deepseek-v4-flash|https://api.deepseek.com）。$}{$CP0=Please enter the model name + Base URL and provide the API Key (e.g., deepseek-v4-flash|https://api.deepseek.com).$}";
 }
 
 string GetUserText() {
@@ -37,8 +37,8 @@ string GetPasswordText() {
 // Global Variables
 string api_key = "";
 string selected_model = "deepseek-v4-flash";
-string apiBaseUrl = "https://api.deepseek.com/v1";               // 用户可见的基础地址 (OpenAI 兼容格式)
-string apiFullUrl = "https://api.deepseek.com/v1/chat/completions"; // 实际请求的完整地址
+string apiBaseUrl = "https://api.deepseek.com";               // 用户可见的基础地址
+string apiFullUrl = "https://api.deepseek.com/chat/completions"; // 实际请求的完整地址
 string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)";
 
 // 保存最近30句字幕用于上下文
@@ -68,18 +68,12 @@ array<string> GetDstLangs() {
     return ret;
 }
 
-// 将用户输入的 Base URL 转换为完整请求 URL (DeepSeek V4 使用 OpenAI 兼容格式 /v1/chat/completions)
+// 将用户输入的 Base URL 转换为完整请求 URL
 string BuildFullUrl(const string &in base) {
     string url = base.Trim();
-    // 如果已经包含完整的 chat/completions 路径，直接返回
     if (url.find("/chat/completions") != -1) {
         return url;
     }
-    // 如果用户输入的是旧版地址 (https://api.deepseek.com)，自动补全 v1 路径
-    if (url == "https://api.deepseek.com") {
-        return "https://api.deepseek.com/v1/chat/completions";
-    }
-    // 去除末尾的斜杠
     if (url.substr(url.length() - 1) == "/") {
         url = url.substr(0, url.length() - 1);
     }
@@ -111,7 +105,7 @@ string ServerLogin(string User, string Pass) {
     if (!customBaseUrl.empty()) {
         apiBaseUrl = customBaseUrl;
     } else {
-        apiBaseUrl = "https://api.deepseek.com/v1";
+        apiBaseUrl = "https://api.deepseek.com";
     }
 
     if (Pass.empty()) {
@@ -137,8 +131,8 @@ string ServerLogin(string User, string Pass) {
 void ServerLogout() {
     api_key = "";
     selected_model = "deepseek-v4-flash";
-    apiBaseUrl = "https://api.deepseek.com/v1";
-    apiFullUrl = "https://api.deepseek.com/v1/chat/completions";
+    apiBaseUrl = "https://api.deepseek.com";
+    apiFullUrl = "https://api.deepseek.com/chat/completions";
     subtitleHistory.resize(0);  // 清空历史字幕
     HostSaveString("api_key", "");
     HostSaveString("selected_model", selected_model);
@@ -210,11 +204,11 @@ string Translate(string Text, string &in SrcLang, string &in DstLang) {
 
     string escapedPrompt = JsonEscape(prompt);
 
-    // DeepSeek V4 API 请求 (OpenAI 兼容格式)，关闭思考模式
+    // DeepSeek API 请求 (OpenAI 兼容格式)
     string requestData = "{\"model\":\"" + selected_model + "\","
                          "\"messages\":[{\"role\":\"user\",\"content\":\"" + escapedPrompt + "\"}],"
                          "\"max_tokens\":1000,\"temperature\":1.0,\"top_p\":1.0,"
-                         "\"thinking_mode\":\"non-thinking\"}";
+                         "\"thinking\":{\"type\":\"disabled\"}}";
 
     string headers = "Authorization: Bearer " + api_key + "\nContent-Type: application/json";
 
@@ -266,8 +260,8 @@ void OnInitialize() {
     HostPrintUTF8("{$CP0=DeepSeek V4 translation plugin loaded (context: last 30 subtitles).$}{$CP936=DeepSeek V4 翻译插件已加载（上下文: 最近30条字幕）。$}\n");
     api_key = HostLoadString("api_key", "");
     selected_model = HostLoadString("selected_model", "deepseek-v4-flash");
-    apiBaseUrl = HostLoadString("apiBaseUrl", "https://api.deepseek.com/v1");
-    apiFullUrl = HostLoadString("apiFullUrl", "https://api.deepseek.com/v1/chat/completions");
+    apiBaseUrl = HostLoadString("apiBaseUrl", "https://api.deepseek.com");
+    apiFullUrl = HostLoadString("apiFullUrl", "https://api.deepseek.com/chat/completions");
     if (!api_key.empty()) {
         HostPrintUTF8("{$CP0=Saved configuration loaded.$}{$CP936=已加载保存的配置。$}\n");
     }
