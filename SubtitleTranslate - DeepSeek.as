@@ -63,10 +63,9 @@ array<string> GetSrcLangs() {
     return ret;
 }
 
-// Get Destination Language List
+// Get Destination Language List (不含空项，用户必须明确选择目标语言)
 array<string> GetDstLangs() {
     array<string> ret = LangTable;
-    ret.insertAt(0, "");
     return ret;
 }
 
