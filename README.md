@@ -1,1 +1,0 @@
-# PotPlayer-DeepSeek-Subtitle-Translate
