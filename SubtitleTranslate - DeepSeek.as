@@ -45,10 +45,10 @@ string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)";
 array<string> subtitleHistory;
 string UNICODE_RLE = "\u202B"; // For Right-to-Left languages
 
-// Supported Language List
+// Supported Language List (不含"自动检测"，由 GetSrcLangs/GetDstLangs 插入空字符串实现)
 array<string> LangTable =
 {
-    "{$CP0=Auto Detect$}{$CP936=自动检测$}", "af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca",
+    "af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca",
     "ceb", "ny", "zh-CN", "zh-TW", "co", "hr", "cs", "da", "nl", "en", "eo", "et", "tl", "fi", "fr",
     "fy", "gl", "ka", "de", "el", "gu", "ht", "ha", "haw", "he", "hi", "hmn", "hu", "is", "ig", "id", "ga", "it", "ja", "jw", "kn", "kk", "km",
     "ko", "ku", "ky", "lo", "la", "lv", "lt", "lb", "mk", "ms", "mg", "ml", "mt", "mi", "mr", "mn", "my", "ne", "no", "ps", "fa", "pl", "pt",
@@ -56,15 +56,17 @@ array<string> LangTable =
     "ur", "uz", "vi", "cy", "xh", "yi", "yo", "zu"
 };
 
-// Get Source Language List
+// Get Source Language List (首项为空字符串，PotPlayer 自动显示为"自动检测")
 array<string> GetSrcLangs() {
     array<string> ret = LangTable;
+    ret.insertAt(0, "");
     return ret;
 }
 
 // Get Destination Language List
 array<string> GetDstLangs() {
     array<string> ret = LangTable;
+    ret.insertAt(0, "");
     return ret;
 }
 
@@ -167,12 +169,12 @@ string Translate(string Text, string &in SrcLang, string &in DstLang) {
         HostPrintUTF8("{$CP0=Warning: Model " + selected_model + " will be deprecated on 2026/07/24. Please switch to deepseek-v4-flash or deepseek-v4-pro.$}{$CP936=警告: 模型 " + selected_model + " 将于 2026/07/24 弃用，请切换至 deepseek-v4-flash 或 deepseek-v4-pro。$}\n");
     }
 
-    if (DstLang.empty() || DstLang == "{$CP0=Auto Detect$}") {
+    if (DstLang.empty()) {
         HostPrintUTF8("{$CP0=Target language not specified. Please select a target language.$}{$CP936=未指定目标语言，请选择目标语言。$}\n");
         return "翻译失败";
     }
 
-    if (SrcLang.empty() || SrcLang == "{$CP0=Auto Detect$}") {
+    if (SrcLang.empty()) {
         SrcLang = "";
     }
 
