@@ -1,50 +1,52 @@
 /*
-    Real-time subtitle translation for PotPlayer using DeepSeek API
-    No context version: translates each subtitle independently (no history)
+    PotPlayer 实时字幕翻译插件 - DeepSeek API (无上下文版)
+    支持简体中文 (CP936) / 繁体中文 (CP950) / 韩文 (CP949) / 英文 (CP0)
+    API 端点: https://api.deepseek.com/chat/completions (OpenAI 兼容格式)
+    无上下文版: 每条字幕独立翻译，不保留历史上下文
 */
 
 // Plugin Information Functions
 string GetTitle() {
-    return "{$CP949=DeepSeek 번역$}{$CP950=DeepSeek 翻譯$}{$CP0=DeepSeek Translate-nocontext$}";
+    return "{$CP949=DeepSeek 번역$}{$CP950=DeepSeek 翻譯$}{$CP936=DeepSeek 翻译$}{$CP0=DeepSeek Translate-nocontext$}";
 }
 
 string GetVersion() {
-    return "2.6-nocontext";
+    return "2.0-nocontext";
 }
 
 string GetDesc() {
-    return "{$CP949=DeepSeek를 사용한 실시간 자막 번역 (문맥 없음)$}{$CP950=使用 DeepSeek 的實時字幕翻譯 (無上下文)$}{$CP0=Real-time subtitle translation using DeepSeek (no context)$}";
+    return "{$CP949=DeepSeek를 사용한 실시간 자막 번역 (문맥 없음)$}{$CP950=使用 DeepSeek 的實時字幕翻譯 (無上下文)$}{$CP936=使用 DeepSeek 的实时字幕翻译 (无上下文)$}{$CP0=Real-time subtitle translation using DeepSeek (no context)$}";
 }
 
 string GetLoginTitle() {
-    return "{$CP949=DeepSeek 모델 및 API 키 구성$}{$CP950=DeepSeek 模型與 API 金鑰配置$}{$CP0=DeepSeek Model + Base URL and API Key Configuration$}";
+    return "{$CP949=DeepSeek 모델 및 API 키 구성$}{$CP950=DeepSeek 模型與 API 金鑰配置$}{$CP936=DeepSeek 模型与 API 密钥配置$}{$CP0=DeepSeek Model + Base URL and API Key Configuration$}";
 }
 
 string GetLoginDesc() {
-    return "{$CP949=모델 이름과 API 주소, 그리고 API 키를 입력하십시오 (예: deepseek-v4-flash|https://api.deepseek.com).$}{$CP950=請輸入模型名稱與 API 地址，以及 API 金鑰（例如 deepseek-v4-flash|https://api.deepseek.com）。$}{$CP0=Please enter the model name + Base URL and provide the API Key (e.g., deepseek-v4-flash|https://api.deepseek.com).$}";
+    return "{$CP949=모델 이름과 API 주소, 그리고 API 키를 입력하십시오 (예: deepseek-v4-flash|https://api.deepseek.com).$}{$CP950=請輸入模型名稱與 API 地址，以及 API 金鑰（例如 deepseek-v4-flash|https://api.deepseek.com）。$}{$CP936=请输入模型名称和 API 地址，以及 API 密钥（例如: deepseek-v4-flash|https://api.deepseek.com）。$}{$CP0=Please enter the model name + Base URL and provide the API Key (e.g., deepseek-v4-flash|https://api.deepseek.com).$}";
 }
 
 string GetUserText() {
-    return "{$CP949=모델 이름|API 주소 (현재: " + selected_model + " | " + apiBaseUrl + ")$}{$CP950=模型名稱|API 地址 (目前: " + selected_model + " | " + apiBaseUrl + ")$}{$CP0=Model Name|Base URL (Current: " + selected_model + " | " + apiBaseUrl + ")$}";
+    return "{$CP949=모델 이름|API 주소 (현재: " + selected_model + " | " + apiBaseUrl + ")$}{$CP950=模型名稱|API 地址 (目前: " + selected_model + " | " + apiBaseUrl + ")$}{$CP936=模型名称|API 地址 (当前: " + selected_model + " | " + apiBaseUrl + ")$}{$CP0=Model Name|Base URL (Current: " + selected_model + " | " + apiBaseUrl + ")$}";
 }
 
 string GetPasswordText() {
-    return "{$CP949=API 키:$}{$CP950=API 金鑰:$}{$CP0=API Key:$}";
+    return "{$CP949=API 키:$}{$CP950=API 金鑰:$}{$CP936=API 密钥:$}{$CP0=API Key:$}";
 }
 
-// Global Variables
+// 全局变量
 string api_key = "";
 string selected_model = "deepseek-v4-flash";
-string apiBaseUrl = "https://api.deepseek.com";
-string apiFullUrl = "https://api.deepseek.com/chat/completions";
+string apiBaseUrl = "https://api.deepseek.com";               // 用户可见的基础地址
+string apiFullUrl = "https://api.deepseek.com/chat/completions"; // 实际请求的完整地址
 string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)";
 
 string UNICODE_RLE = "\u202B"; // For Right-to-Left languages
 
-// Supported Language List
+// 支持的语言列表（不含"自动检测"，由 GetSrcLangs 插入空字符串实现）
 array<string> LangTable =
 {
-    "{$CP0=Auto Detect$}", "af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca",
+    "af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca",
     "ceb", "ny", "zh-CN", "zh-TW", "co", "hr", "cs", "da", "nl", "en", "eo", "et", "tl", "fi", "fr",
     "fy", "gl", "ka", "de", "el", "gu", "ht", "ha", "haw", "he", "hi", "hmn", "hu", "is", "ig", "id", "ga", "it", "ja", "jw", "kn", "kk", "km",
     "ko", "ku", "ky", "lo", "la", "lv", "lt", "lb", "mk", "ms", "mg", "ml", "mt", "mi", "mr", "mn", "my", "ne", "no", "ps", "fa", "pl", "pt",
@@ -52,13 +54,14 @@ array<string> LangTable =
     "ur", "uz", "vi", "cy", "xh", "yi", "yo", "zu"
 };
 
-// Get Source Language List
+// Get Source Language List (首项为空字符串，PotPlayer 自动显示为"自动检测")
 array<string> GetSrcLangs() {
     array<string> ret = LangTable;
+    ret.insertAt(0, "");
     return ret;
 }
 
-// Get Destination Language List
+// Get Destination Language List (不含空项，用户必须明确选择目标语言)
 array<string> GetDstLangs() {
     array<string> ret = LangTable;
     return ret;
@@ -94,7 +97,7 @@ string ServerLogin(string User, string Pass) {
     }
 
     if (userModel.empty()) {
-        HostPrintUTF8("{$CP0=Model name not entered. Please enter a valid model name.$}\n");
+        HostPrintUTF8("{$CP0=Model name not entered. Please enter a valid model name.$}{$CP936=未输入模型名称，请输入有效的模型名称。$}\n");
         userModel = "deepseek-v4-flash";
     }
 
@@ -105,7 +108,7 @@ string ServerLogin(string User, string Pass) {
     }
 
     if (Pass.empty()) {
-        HostPrintUTF8("{$CP0=API Key not configured. Please enter a valid API Key.$}\n");
+        HostPrintUTF8("{$CP0=API Key not configured. Please enter a valid API Key.$}{$CP936=API 密钥未配置，请输入有效的 API 密钥。$}\n");
         return "fail";
     }
 
@@ -118,7 +121,7 @@ string ServerLogin(string User, string Pass) {
     HostSaveString("apiBaseUrl", apiBaseUrl);
     HostSaveString("apiFullUrl", apiFullUrl);
 
-    HostPrintUTF8("{$CP0=API Key and model name successfully configured. Full URL: $}" + apiFullUrl + "\n");
+    HostPrintUTF8("{$CP0=API Key and model name successfully configured. Full URL: $}{$CP936=API 密钥和模型名称配置成功。完整 URL: $}" + apiFullUrl + "\n");
     return "200 ok";
 }
 
@@ -132,7 +135,7 @@ void ServerLogout() {
     HostSaveString("selected_model", selected_model);
     HostSaveString("apiBaseUrl", apiBaseUrl);
     HostSaveString("apiFullUrl", apiFullUrl);
-    HostPrintUTF8("{$CP0=Successfully logged out.$}\n");
+    HostPrintUTF8("{$CP0=Successfully logged out.$}{$CP936=已成功注销。$}\n");
 }
 
 // JSON String Escape Function
@@ -146,34 +149,31 @@ string JsonEscape(const string &in input) {
     return output;
 }
 
-// Translation Function (no context: independent translation of each subtitle)
+// 翻译函数：使用 DeepSeek API，每条字幕独立翻译（无上下文）
 string Translate(string Text, string &in SrcLang, string &in DstLang) {
-    // 加载配置
-    api_key = HostLoadString("api_key", "");
-    selected_model = HostLoadString("selected_model", "deepseek-v4-flash");
-    apiBaseUrl = HostLoadString("apiBaseUrl", "https://api.deepseek.com");
-    apiFullUrl = HostLoadString("apiFullUrl", "https://api.deepseek.com/chat/completions");
-
     if (api_key.empty()) {
-        HostPrintUTF8("{$CP0=API Key not configured. Please enter it in the settings menu.$}\n");
-        return "{$CP0=Translation failed$}";
+        api_key = HostLoadString("api_key", "");
+        if (api_key.empty()) {
+            HostPrintUTF8("{$CP0=API Key not configured. Please enter it in the settings menu.$}{$CP936=API 密钥未配置，请在设置菜单中输入。$}\n");
+            return "翻译失败";
+        }
     }
 
     // 检查并警告弃用模型
     if (selected_model == "deepseek-chat" || selected_model == "deepseek-reasoner") {
-        HostPrintUTF8("{$CP0=Warning: Model " + selected_model + " will be deprecated on 2026/07/24. Please switch to deepseek-v4-flash or deepseek-v4-pro.$}\n");
+        HostPrintUTF8("{$CP0=Warning: Model " + selected_model + " will be deprecated on 2026/07/24. Please switch to deepseek-v4-flash or deepseek-v4-pro.$}{$CP936=警告: 模型 " + selected_model + " 将于 2026/07/24 弃用，请切换至 deepseek-v4-flash 或 deepseek-v4-pro。$}\n");
     }
 
     if (DstLang.empty() || DstLang == "{$CP0=Auto Detect$}") {
-        HostPrintUTF8("{$CP0=Target language not specified. Please select a target language.$}\n");
-        return "{$CP0=Translation failed$}";
+        HostPrintUTF8("{$CP0=Target language not specified. Please select a target language.$}{$CP936=未指定目标语言，请选择目标语言。$}\n");
+        return "翻译失败";
     }
 
     if (SrcLang.empty() || SrcLang == "{$CP0=Auto Detect$}") {
         SrcLang = "";
     }
 
-    // 构造提示词（无上下文，与原始版本风格一致）
+    // 构造翻译提示词（无上下文，每条字幕独立翻译）
     string prompt = "You are a professional translator. Please translate the following subtitle, output only translated results. If content that violates the Terms of Service appears, just output the translation result that complies with safety standards.";
     if (!SrcLang.empty()) {
         prompt += " from " + SrcLang;
@@ -181,44 +181,41 @@ string Translate(string Text, string &in SrcLang, string &in DstLang) {
     prompt += " to " + DstLang + ".\n";
     prompt += "Subtitle to translate:\n" + Text;
 
-    // JSON escape
     string escapedPrompt = JsonEscape(prompt);
 
-    // 请求数据
+    // DeepSeek API 请求 (OpenAI 兼容格式)
     string requestData = "{\"model\":\"" + selected_model + "\","
                          "\"messages\":[{\"role\":\"user\",\"content\":\"" + escapedPrompt + "\"}],"
-                         "\"max_tokens\":1000,\"temperature\":0,"
+                         "\"max_tokens\":1000,\"temperature\":1.0,\"top_p\":1.0,"
                          "\"thinking\":{\"type\":\"disabled\"}}";
 
     string headers = "Authorization: Bearer " + api_key + "\nContent-Type: application/json";
 
-    // 发送请求
     string response = HostUrlGetString(apiFullUrl, UserAgent, headers, requestData);
     if (response.empty()) {
-        HostPrintUTF8("{$CP0=Translation request failed. Please check network connection or API Key.$}\n");
-        return "{$CP0=Translation failed$}";
+        HostPrintUTF8("{$CP0=Translation request failed. Please check network connection or API Key.$}{$CP936=翻译请求失败，请检查网络连接或 API 密钥。$}\n");
+        return "翻译失败";
     }
 
-    // 解析响应
     JsonReader Reader;
     JsonValue Root;
     if (!Reader.parse(response, Root)) {
-        HostPrintUTF8("{$CP0=Failed to parse API response.$}\n");
-        return "{$CP0=Translation failed$}";
+        HostPrintUTF8("{$CP0=Failed to parse API response.$}{$CP936=解析 API 响应失败。$}\n");
+        return "翻译失败";
     }
 
     JsonValue choices = Root["choices"];
     if (choices.isArray() && choices[0]["message"]["content"].isString()) {
         string translatedText = choices[0]["message"]["content"].asString();
 
-        // 处理多行翻译结果：只取最后一行
+        // 多行结果只取最后一行（去除模型的额外推理）
         translatedText = translatedText.Trim();
         if (translatedText.find("\n") != -1) {
             array<string> lines = translatedText.split("\n");
             translatedText = lines[lines.length() - 1].Trim();
         }
 
-        // 处理 RTL 语言
+        // RTL 语言处理
         if (DstLang == "fa" || DstLang == "ar" || DstLang == "he") {
             translatedText = UNICODE_RLE + translatedText;
         }
@@ -228,30 +225,28 @@ string Translate(string Text, string &in SrcLang, string &in DstLang) {
         return translatedText;
     }
 
-    // 处理 API 错误
     if (Root["error"]["message"].isString()) {
-        string errorMessage = Root["error"]["message"].asString();
-        HostPrintUTF8("{$CP0=API Error: $}" + errorMessage + "\n");
+        HostPrintUTF8("{$CP0=API Error: $}{$CP936=API 错误: $}" + Root["error"]["message"].asString() + "\n");
     } else {
-        HostPrintUTF8("{$CP0=Translation failed. Please check input parameters or API Key configuration.$}\n");
+        HostPrintUTF8("{$CP0=Translation failed. Please check input parameters or API Key configuration.$}{$CP936=翻译失败，请检查输入参数或 API 密钥配置。$}\n");
     }
 
-    return "{$CP0=Translation failed$}";
+    return "翻译失败";
 }
 
 // Plugin Initialization
 void OnInitialize() {
-    HostPrintUTF8("{$CP0=DeepSeek translation plugin loaded (no context version).$}\n");
+    HostPrintUTF8("{$CP0=DeepSeek translation plugin loaded (no context version).$}{$CP936=DeepSeek 翻译插件已加载（无上下文版）。$}\n");
     api_key = HostLoadString("api_key", "");
     selected_model = HostLoadString("selected_model", "deepseek-v4-flash");
     apiBaseUrl = HostLoadString("apiBaseUrl", "https://api.deepseek.com");
     apiFullUrl = HostLoadString("apiFullUrl", "https://api.deepseek.com/chat/completions");
     if (!api_key.empty()) {
-        HostPrintUTF8("{$CP0=Saved API Key, model name, and Base URL loaded.$}\n");
+        HostPrintUTF8("{$CP0=Saved API Key, model name, and Base URL loaded.$}{$CP936=已加载保存的配置。$}\n");
     }
 }
 
 // Plugin Finalization
 void OnFinalize() {
-    HostPrintUTF8("{$CP0=DeepSeek translation plugin unloaded.$}\n");
+    HostPrintUTF8("{$CP0=DeepSeek translation plugin unloaded.$}{$CP936=DeepSeek 翻译插件已卸载。$}\n");
 }
